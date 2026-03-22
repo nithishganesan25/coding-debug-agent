@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request, jsonify, render_template
-from main import debug_code
+from main import analyze_code
 
 app = Flask(__name__)
 
@@ -8,17 +8,18 @@ app = Flask(__name__)
 def home():
     return render_template("index.html")
 
-@app.route("/debug", methods=["POST"])
-def debug():
+@app.route("/analyze", methods=["POST"])
+def analyze():
     try:
         data = request.json
-        if not data or "code" not in data or "error" not in data:
-            return jsonify({"error": "Please provide both 'code' and 'error' in the JSON payload."}), 400
+        if not data or "code" not in data:
+            return jsonify({"error": "Please provide your code in the JSON payload."}), 400
             
-        code = data["code"]
-        error = data["error"]
+        code = data.get("code", "")
+        error = data.get("error", "")
+        mode = data.get("mode", "debug")
 
-        result = debug_code(code, error)
+        result = analyze_code(code, error, mode)
 
         return jsonify({"response": result})
     except Exception as e:

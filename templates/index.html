@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Code Debugger | Pro Edition</title>
+    <title>AI Code Agent Workstation</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Marked.js -->
@@ -62,6 +62,15 @@
             background-position: right center;
             box-shadow: 0 0 20px #db2777, 0 0 40px #9333ea;
         }
+        
+        /* Active Tab indicator */
+        .agent-tab { transition: all 0.3s ease; }
+        .agent-tab.active {
+            background: rgba(255,255,255,0.2);
+            border-color: #fbcfe8;
+            box-shadow: 0 0 15px rgba(219,39,119,0.5);
+            transform: translateY(-2px);
+        }
 
         /* Markdown Styling inside the solution box */
         .markdown-body { color: #f3e8ff; line-height: 1.6; font-size: 0.95rem; }
@@ -87,42 +96,54 @@
     <header class="text-center mb-8 flex-shrink-0">
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-300 to-purple-400 drop-shadow-lg">
-                AI Agent
+                Multi-Agent
             </span>
-            <span class="text-white drop-shadow-md">Workspace</span>
+            <span class="text-white drop-shadow-md">Command Center</span>
         </h1>
-        <p class="text-purple-300 opacity-80 text-lg">Intelligent Code Diagnosis & Iteration</p>
+        <p class="text-purple-300 opacity-80 text-lg">Select a specialized AI Agent to process your code.</p>
     </header>
 
     <!-- Main Two-Column Layout -->
     <div class="flex-grow w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 h-full min-h-[70vh]">
         
-        <!-- Left Panel: DEBUGGING -->
+        <!-- Left Panel: TASK INPUT -->
         <div class="glass-panel rounded-[2rem] p-6 lg:p-8 flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(192,132,252,0.15)] group">
             <div class="absolute top-0 right-0 w-32 h-32 bg-fuchsia-600 rounded-full blur-[80px] opacity-30 -z-10 group-hover:opacity-60 transition-opacity duration-700"></div>
             
-            <div class="flex items-center mb-6 z-10">
-                <div class="bg-white/95 text-[#2a0845] font-black px-6 py-2 rounded-2xl tracking-[0.2em] text-xl inline-block shadow-lg border-2 border-transparent">
-                    DEBUGGING
+            <div class="flex flex-col mb-4 bg-black/30 p-4 rounded-2xl border border-white/5 shadow-inner">
+                <span class="text-sm font-bold text-fuchsia-300 tracking-wider mb-2">SELECT AGENT MODE:</span>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="agent-selector">
+                    <button data-mode="debug" class="agent-tab active bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                        <span class="text-xl">🐛</span> Debug
+                    </button>
+                    <button data-mode="refactor" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                        <span class="text-xl">🚀</span> Refactor
+                    </button>
+                    <button data-mode="security" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                        <span class="text-xl">🛡️</span> Security
+                    </button>
+                    <button data-mode="explain" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                        <span class="text-xl">🧠</span> Explain
+                    </button>
                 </div>
             </div>
 
-            <div class="flex-grow flex flex-col gap-4 relative z-10 w-full">
+            <div class="flex-grow flex flex-col gap-4 relative z-10 w-full mt-2">
                 <!-- Code Area -->
-                <div class="flex flex-col flex-grow min-h-[250px]">
-                    <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all shadow-inner" placeholder="# Paste your broken code here..."></textarea>
+                <div class="flex flex-col flex-grow min-h-[200px]">
+                    <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all shadow-inner" placeholder="# Paste your target code here..."></textarea>
                 </div>
                 
                 <!-- Error Area -->
-                <div class="h-auto flex flex-col mt-2">
-                    <textarea id="error" class="code-input h-24 w-full rounded-2xl p-4 resize-none transition-all text-sm shadow-inner" placeholder="Paste error logs or context..."></textarea>
+                <div class="h-auto flex flex-col">
+                    <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm shadow-inner" placeholder="Paste context or errors here (Optional)..."></textarea>
                 </div>
             </div>
 
             <div class="mt-6 flex justify-end lg:justify-end z-10">
-                <button id="debug-btn" class="glow-btn text-white font-black tracking-widest py-4 px-12 rounded-2xl flex items-center gap-3 text-lg outline-none focus:ring-4 focus:ring-pink-400 shadow-[0_10px_30px_rgba(219,39,119,0.3)]">
-                    DEBUG
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                <button id="dispatch-btn" class="glow-btn text-white font-black tracking-widest py-4 px-10 rounded-2xl flex items-center gap-3 text-lg outline-none focus:ring-4 focus:ring-pink-400 shadow-[0_10px_30px_rgba(219,39,119,0.3)]">
+                    DISPATCH AGENT
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 </button>
             </div>
         </div>
@@ -132,8 +153,8 @@
             <div class="absolute bottom-0 left-0 w-40 h-40 bg-pink-600 rounded-full blur-[100px] opacity-20 -z-10"></div>
 
             <div class="flex items-center justify-between mb-6 z-10">
-                <div class="text-white font-black tracking-[0.2em] text-xl border-b-[3px] border-pink-500 pb-1">
-                    SOLUTION
+                <div class="text-white font-black tracking-[0.2em] text-xl border-b-[3px] border-pink-500 pb-1 flex items-center gap-3">
+                    AGENT RESPONSE
                 </div>
             </div>
 
@@ -142,8 +163,8 @@
                 
                 <!-- Initial Placeholder -->
                 <div id="placeholder" class="h-full flex flex-col items-center justify-center opacity-30 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    <p class="text-xl font-light tracking-wide">Waiting for inputs...</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <p class="text-xl font-light tracking-wide">Waiting for assignment...</p>
                 </div>
 
                 <!-- Loading State -->
@@ -152,7 +173,7 @@
                         <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <p class="text-lg animate-pulse font-semibold tracking-wide">Analyzing with Gemini...</p>
+                    <p id="loading-text" class="text-lg animate-pulse font-semibold tracking-wide">Agent is analyzing...</p>
                 </div>
 
                 <!-- Results -->
@@ -164,12 +185,24 @@
 
     <!-- Script Logic -->
     <script>
-        document.getElementById('debug-btn').addEventListener('click', async () => {
+        let currentMode = 'debug';
+
+        // Make agent tabs interactive
+        document.querySelectorAll('.agent-tab').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.agent-tab').forEach(b => b.classList.remove('active'));
+                const target = e.currentTarget;
+                target.classList.add('active');
+                currentMode = target.getAttribute('data-mode');
+            });
+        });
+
+        document.getElementById('dispatch-btn').addEventListener('click', async () => {
             const code = document.getElementById('code').value;
             const error = document.getElementById('error').value;
 
-            if (!code.trim() && !error.trim()) {
-                alert("Please provide some code to debug!");
+            if (!code.trim()) {
+                alert("Please provide target code for the agent to process!");
                 return;
             }
 
@@ -177,19 +210,26 @@
             document.getElementById('placeholder').classList.add('hidden');
             document.getElementById('result-content').classList.add('hidden');
             document.getElementById('result-content').innerHTML = '';
+            
+            const loadingText = document.getElementById('loading-text');
+            if(currentMode === 'debug') loadingText.innerText = 'Debugging Agent is hunting errors...';
+            if(currentMode === 'refactor') loadingText.innerText = 'Refactoring Agent is optimizing your code...';
+            if(currentMode === 'security') loadingText.innerText = 'Security Agent is hunting vulnerabilities...';
+            if(currentMode === 'explain') loadingText.innerText = 'Teaching Agent is analyzing code flow...';
+
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('loading').classList.add('flex');
             
-            const btn = document.getElementById('debug-btn');
-            btn.innerHTML = 'ANALYZING...';
+            const btn = document.getElementById('dispatch-btn');
+            btn.innerHTML = 'IN PROGRESS...';
             btn.disabled = true;
             btn.classList.add('opacity-80', 'cursor-wait');
 
             try {
-                const response = await fetch('/debug', {
+                const response = await fetch('/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code, error: error })
+                    body: JSON.stringify({ code: code, error: error, mode: currentMode })
                 });
 
                 const data = await response.json();
@@ -219,7 +259,7 @@
                     <p class="text-red-200">Could not reach the server. Make sure your Python backend is running!</p>
                 </div>`;
             } finally {
-                btn.innerHTML = `DEBUG <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`;
+                btn.innerHTML = `DISPATCH AGENT <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`;
                 btn.disabled = false;
                 btn.classList.remove('opacity-80', 'cursor-wait');
             }

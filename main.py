@@ -16,19 +16,30 @@ genai.configure(api_key=api_key)
 # Initialize the model
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-def debug_code(code: str, error: str) -> str:
-    prompt = f"""
-    You are an expert coding assistant.
+def analyze_code(code: str, error: str, mode: str = "debug") -> str:
+    """
+    Acts as different AI Agents based on the mode requested by the user.
+    """
     
-    Fix the following code and explain the error step-by-step.
-    Also give the corrected code.
+    agents = {
+        "debug": "You are a Senior Debugging Agent. Find the exact lines causing the error, explain WHY it broke, and rewrite the code flawlessly.",
+        "refactor": "You are an Architecture & Refactoring Agent. Analyze the code for performance bottlenecks, bad practices, and messy logic. Rewrite it to be ultra-efficient, pythonic, and elegant.",
+        "security": "You are an Elite Application Security Agent. Hunt down vulnerabilities, SQL injections, unprotected variables, or logic flaws in this code. Explain risks and provide a hardened version.",
+        "explain": "You are a Technical Teacher. Explain what this code does line-by-line as if I am a junior developer. Focus on making complex concepts incredibly easy to understand."
+    }
+    
+    # Fallback to debug if mode is unknown
+    agent_prompt = agents.get(mode, agents["debug"])
 
-    Code:
+    prompt = f"""
+    {agent_prompt}
+    
+    Target Code:
     ```
     {code}
     ```
 
-    Error:
+    Context / Errors (If any):
     ```
     {error}
     ```
