@@ -42,9 +42,10 @@
             color: #d8b4fe;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .code-input:focus {
+        .code-input:focus, .code-editor-container:focus-within {
             outline: none; border-color: #c084fc; box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
         }
+        .code-editor-container { transition: 0.3s; }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
@@ -187,8 +188,15 @@
             </div>
 
             <div class="flex-grow flex flex-col gap-4 relative z-10 w-full mt-2">
-                <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all" placeholder="# Paste or Drag & Drop a code file here..."></textarea>
-                <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm" placeholder="Paste context or errors here (Optional)..."></textarea>
+                <!-- Editor Container with Built-in Line Numbers -->
+                <div class="flex flex-grow w-full rounded-2xl resize-none transition-all border border-white/10 bg-[rgba(0,0,0,0.5)] overflow-hidden code-editor-container">
+                    <div id="line-numbers" class="text-right p-5 pr-2 select-none text-gray-500 font-mono text-[15px] leading-normal opacity-50 bg-black/40 overflow-hidden" style="width: 3.5rem;">1</div>
+                    <textarea id="code" class="code-input flex-grow w-full p-5 pl-3 resize-none bg-transparent border-none outline-none shadow-none text-[15px] leading-normal m-0" placeholder="# Paste or Drag & Drop a code file here..." style="box-shadow: none;" onscroll="document.getElementById('line-numbers').scrollTop = this.scrollTop;" oninput="updateLineNumbers()"></textarea>
+                </div>
+                <!-- Error Context -->
+                <div class="h-auto flex flex-col">
+                    <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm" placeholder="Paste context or errors here (Optional)..."></textarea>
+                </div>
             </div>
 
             <div class="mt-6 flex justify-end z-10">
@@ -237,6 +245,15 @@
         let currentMode = 'debug';
         let isGenerating = false;
         
+        // Dynamic Line Number Generation
+        function updateLineNumbers() {
+            const textarea = document.getElementById('code');
+            const lines = textarea.value.split('\n').length || 1;
+            let numbersStr = '';
+            for(let i = 1; i <= lines; i++) { numbersStr += i + '<br>'; }
+            document.getElementById('line-numbers').innerHTML = numbersStr;
+        }
+
         // Setup Highlight.js and Marked options
         marked.setOptions({
             highlight: function(code, lang) {
@@ -272,6 +289,7 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     codeInput.value = event.target.result;
+                    updateLineNumbers(); // Sync line numbers instantly
                     // Flash green to indicate success
                     codeInput.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.5)';
                     codeInput.style.borderColor = '#10b981';
