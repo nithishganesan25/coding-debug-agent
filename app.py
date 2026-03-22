@@ -1,6 +1,7 @@
 import os
-from flask import Flask, request, jsonify, render_template
-from main import analyze_code
+import json
+from flask import Flask, request, jsonify, render_template, Response
+from main import analyze_code_stream
 
 app = Flask(__name__)
 
@@ -8,22 +9,27 @@ app = Flask(__name__)
 def home():
     return render_template("index.html")
 
-@app.route("/analyze", methods=["POST"])
-def analyze():
-    try:
-        data = request.json
-        if not data or "code" not in data:
-            return jsonify({"error": "Please provide your code in the JSON payload."}), 400
-            
-        code = data.get("code", "")
-        error = data.get("error", "")
-        mode = data.get("mode", "debug")
+@app.route("/analyze_stream", methods=["POST"])
+def analyze_stream():
+    """ Handles Server-Sent Events (SSE) for live-streaming the Gemini response """
+    data = request.json
+    if not data or "code" not in data:
+        return jsonify({"error": "Please provide your code in the JSON payload."}), 400
+        
+    code = data.get("code", "")
+    error = data.get("error", "")
+    mode = data.get("mode", "debug")
 
-        result = analyze_code(code, error, mode)
+    def generate():
+        try:
+            for text_chunk in analyze_code_stream(code, error, mode):
+                # Send the text chunk as a proper SSE JSON payload to perfectly handle newlines and quotes
+                yield f"data: {json.dumps({'text': text_chunk})}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'text': f'Server Stream Error: {str(e)}'})}\n\n"
 
-        return jsonify({"response": result})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return Response(generate(), mimetype='text/event-stream')
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))

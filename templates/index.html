@@ -8,14 +8,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Google Fonts for Typography -->
+    <!-- Highlight.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'Outfit', sans-serif; 
-            background: linear-gradient(135deg, #1e0b36 0%, #4a196e 50%, #2a0845 100%);
+            background: linear-gradient(135deg, #0f0518 0%, #31114a 50%, #170428 100%);
             background-size: 200% 200%;
             animation: gradientMove 15s ease infinite;
+            margin: 0; overflow-x: hidden;
         }
         @keyframes gradientMove {
             0% { background-position: 0% 50%; }
@@ -23,125 +27,137 @@
             100% { background-position: 0% 50%; }
         }
         
-        /* Glassmorphism Classes */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
 
-        /* Mono inputs */
         .code-input {
             font-family: 'JetBrains Mono', monospace;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.5);
             color: #d8b4fe;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .code-input:focus {
-            outline: none;
-            border-color: #c084fc;
-            box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
+            outline: none; border-color: #c084fc; box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
         }
 
-        /* Scrollbar styling */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(192, 132, 252, 0.5); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(192, 132, 252, 0.8); }
 
-        /* Glowing Button */
         .glow-btn {
             background: linear-gradient(90deg, #9333ea, #db2777);
-            background-size: 200% auto;
-            transition: 0.5s;
-            border: none;
+            background-size: 200% auto; transition: 0.5s; border: none; cursor: pointer;
         }
         .glow-btn:hover {
-            background-position: right center;
-            box-shadow: 0 0 20px #db2777, 0 0 40px #9333ea;
+            background-position: right center; box-shadow: 0 0 20px #db2777, 0 0 40px #9333ea; transform: translateY(-2px);
         }
         
-        /* Active Tab indicator */
-        .agent-tab { transition: all 0.3s ease; }
+        .agent-tab { transition: all 0.3s ease; cursor: pointer; }
         .agent-tab.active {
-            background: rgba(255,255,255,0.2);
-            border-color: #fbcfe8;
-            box-shadow: 0 0 15px rgba(219,39,119,0.5);
-            transform: translateY(-2px);
+            background: rgba(255,255,255,0.2); border-color: #fbcfe8;
+            box-shadow: 0 0 15px rgba(219,39,119,0.5); transform: translateY(-2px);
         }
 
-        /* Markdown Styling inside the solution box */
+        /* Sidebar Magic */
+        .sidebar {
+            position: fixed; top: 0; left: -320px; width: 320px; height: 100vh;
+            background: rgba(15, 5, 24, 0.95); backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 50;
+            padding: 2rem 1.5rem; overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        
+        .history-item {
+            background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 0.8rem;
+            margin-bottom: 0.8rem; cursor: pointer; border: 1px solid transparent; transition: 0.2s;
+        }
+        .history-item:hover { background: rgba(255,255,255,0.1); border-color: #c084fc; }
+
+        /* Custom Markdown inside Output */
         .markdown-body { color: #f3e8ff; line-height: 1.6; font-size: 0.95rem; }
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #fdf4ff; margin-bottom: 0.8rem; margin-top: 1.2rem; font-weight: 800; }
-        .markdown-body h1 {font-size: 1.5rem}
-        .markdown-body h2 {font-size: 1.3rem}
-        .markdown-body h3 {font-size: 1.1rem}
-        .markdown-body pre { background: rgba(0, 0, 0, 0.5); padding: 1.2rem; border-radius: 0.75rem; margin: 1.2rem 0; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
-        .markdown-body code { font-family: 'JetBrains Mono', monospace; color: #fbcfe8; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 0.25rem; }
-        .markdown-body pre code { background: none; color: #e9d5ff; padding: 0; font-size: 0.95em; }
+        .markdown-body h1 {font-size: 1.5rem; font-weight: bold; margin: 1rem 0;}
+        .markdown-body h2 {font-size: 1.3rem; font-weight: bold; margin: 1rem 0;}
+        .markdown-body pre { 
+            background: #1a1b26; padding: 1rem; border-radius: 0.75rem; 
+            margin: 1.2rem 0; overflow-x: auto; position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .markdown-body code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
         .markdown-body p { margin-bottom: 1rem; }
-        .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        .markdown-body ul { list-style-type: disc; }
-        .markdown-body ol { list-style-type: decimal; }
-        .markdown-body li { margin-bottom: 0.3rem; }
-        .markdown-body a { color: #f472b6; text-decoration: underline; }
-        .markdown-body blockquote { border-left: 4px solid #db2777; padding-left: 1rem; color: #fbcfe8; font-style: italic; background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 0 0.5rem 0.5rem 0;}
+        
+        /* Copy Button styling over Code blocks */
+        .copy-btn {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(255,255,255,0.1); color: #fff; border: none;
+            padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.75rem;
+            cursor: pointer; transition: 0.2s; font-family: 'Outfit'; z-index: 10;
+        }
+        .copy-btn:hover { background: #db2777; }
     </style>
 </head>
 <body class="min-h-screen text-white flex flex-col p-4 md:p-6 lg:p-8">
 
-    <!-- Top Header -->
-    <header class="text-center mb-8 flex-shrink-0">
+    <!-- History Sidebar -->
+    <div id="sidebar" class="sidebar shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-400">Agent Memory</h2>
+            <button onclick="toggleSidebar()" class="text-white hover:text-pink-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        <div id="history-list" class="flex flex-col gap-2">
+            <!-- History Items generated here -->
+        </div>
+        <button onclick="clearHistory()" class="mt-4 w-full py-2 bg-red-900/40 text-red-300 rounded-lg text-sm hover:bg-red-900/60 transition">Clear All Memory</button>
+    </div>
+
+    <!-- Header containing Sidebar Toggle -->
+    <header class="text-center mb-8 relative flex-shrink-0">
+        <button onclick="toggleSidebar()" class="absolute left-0 top-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            History
+        </button>
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
-            <span class="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-300 to-purple-400 drop-shadow-lg">
-                Multi-Agent
-            </span>
-            <span class="text-white drop-shadow-md">Command Center</span>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-300 to-purple-400">Multi-Agent</span> Command Center
         </h1>
-        <p class="text-purple-300 opacity-80 text-lg">Select a specialized AI Agent to process your code.</p>
     </header>
 
-    <!-- Main Two-Column Layout -->
     <div class="flex-grow w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 h-full min-h-[70vh]">
         
         <!-- Left Panel: TASK INPUT -->
-        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(192,132,252,0.15)] group">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-fuchsia-600 rounded-full blur-[80px] opacity-30 -z-10 group-hover:opacity-60 transition-opacity duration-700"></div>
+        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 flex flex-col relative group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-fuchsia-600 rounded-full blur-[80px] opacity-20 -z-10 group-hover:opacity-40"></div>
             
-            <div class="flex flex-col mb-4 bg-black/30 p-4 rounded-2xl border border-white/5 shadow-inner">
+            <div class="flex flex-col mb-4 bg-black/30 p-4 rounded-2xl border border-white/5">
                 <span class="text-sm font-bold text-fuchsia-300 tracking-wider mb-2">SELECT AGENT MODE:</span>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="agent-selector">
-                    <button data-mode="debug" class="agent-tab active bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <button data-mode="debug" class="agent-tab active bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1">
                         <span class="text-xl">🐛</span> Debug
                     </button>
-                    <button data-mode="refactor" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                    <button data-mode="refactor" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1">
                         <span class="text-xl">🚀</span> Refactor
                     </button>
-                    <button data-mode="security" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                    <button data-mode="security" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1">
                         <span class="text-xl">🛡️</span> Security
                     </button>
-                    <button data-mode="explain" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1 hover:bg-white/10">
+                    <button data-mode="explain" class="agent-tab bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-bold flex flex-col items-center gap-1">
                         <span class="text-xl">🧠</span> Explain
                     </button>
                 </div>
             </div>
 
             <div class="flex-grow flex flex-col gap-4 relative z-10 w-full mt-2">
-                <!-- Code Area -->
-                <div class="flex flex-col flex-grow min-h-[200px]">
-                    <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all shadow-inner" placeholder="# Paste your target code here..."></textarea>
-                </div>
-                
-                <!-- Error Area -->
-                <div class="h-auto flex flex-col">
-                    <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm shadow-inner" placeholder="Paste context or errors here (Optional)..."></textarea>
-                </div>
+                <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all" placeholder="# Paste your target code here..."></textarea>
+                <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm" placeholder="Paste context or errors here (Optional)..."></textarea>
             </div>
 
-            <div class="mt-6 flex justify-end lg:justify-end z-10">
-                <button id="dispatch-btn" class="glow-btn text-white font-black tracking-widest py-4 px-10 rounded-2xl flex items-center gap-3 text-lg outline-none focus:ring-4 focus:ring-pink-400 shadow-[0_10px_30px_rgba(219,39,119,0.3)]">
+            <div class="mt-6 flex justify-end z-10">
+                <button id="dispatch-btn" class="glow-btn text-white font-black tracking-widest py-4 px-10 rounded-2xl flex items-center gap-3 text-lg">
                     DISPATCH AGENT
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 </button>
@@ -149,45 +165,47 @@
         </div>
 
         <!-- Right Panel: SOLUTION -->
-        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(219,39,119,0.15)] h-full min-h-[500px]">
+        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 flex flex-col relative overflow-hidden h-full min-h-[500px]">
             <div class="absolute bottom-0 left-0 w-40 h-40 bg-pink-600 rounded-full blur-[100px] opacity-20 -z-10"></div>
-
-            <div class="flex items-center justify-between mb-6 z-10">
-                <div class="text-white font-black tracking-[0.2em] text-xl border-b-[3px] border-pink-500 pb-1 flex items-center gap-3">
-                    AGENT RESPONSE
-                </div>
+            
+            <div class="flex items-center justify-between mb-4 z-10">
+                <div class="text-white font-black tracking-[0.2em] text-xl border-b-[3px] border-pink-500 pb-1">AGENT RESPONSE</div>
             </div>
 
             <!-- Content Area -->
-            <div class="flex-grow relative bg-black/30 rounded-2xl border border-white/10 p-6 md:p-8 overflow-y-auto shadow-inner" id="output-area">
+            <div class="flex-grow relative bg-[#0d0415] rounded-2xl border border-white/10 p-6 md:p-8 overflow-y-auto shadow-inner" id="output-wrapper">
                 
-                <!-- Initial Placeholder -->
                 <div id="placeholder" class="h-full flex flex-col items-center justify-center opacity-30 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <p class="text-xl font-light tracking-wide">Waiting for assignment...</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <p class="text-lg">Waiting for assignment...</p>
                 </div>
 
-                <!-- Loading State -->
-                <div id="loading" class="hidden h-full flex flex-col items-center justify-center text-pink-300">
-                    <svg class="animate-spin h-14 w-14 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p id="loading-text" class="text-lg animate-pulse font-semibold tracking-wide">Agent is analyzing...</p>
-                </div>
-
-                <!-- Results -->
+                <!-- Markdown Content box -->
                 <div id="result-content" class="hidden markdown-body w-full"></div>
             </div>
-            
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- Scripts -->
     <script>
         let currentMode = 'debug';
+        let isGenerating = false;
+        
+        // Setup Highlight.js and Marked options
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            }
+        });
 
-        // Make agent tabs interactive
+        // Toggle Sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            renderHistory();
+        }
+
+        // Agent tabs
         document.querySelectorAll('.agent-tab').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.agent-tab').forEach(b => b.classList.remove('active'));
@@ -197,73 +215,159 @@
             });
         });
 
-        document.getElementById('dispatch-btn').addEventListener('click', async () => {
-            const code = document.getElementById('code').value;
-            const error = document.getElementById('error').value;
+        // Add Copy Builders to Code Blocks
+        function injectCopyButtons() {
+            document.querySelectorAll('pre').forEach((block) => {
+                if(block.querySelector('.copy-btn')) return; // already injected
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.innerText = 'Copy';
+                btn.onclick = () => {
+                    const codeText = block.querySelector('code').innerText;
+                    navigator.clipboard.writeText(codeText);
+                    btn.innerText = 'Copied!';
+                    btn.style.background = '#10b981';
+                    setTimeout(() => { btn.innerText = 'Copy'; btn.style.background = 'rgba(255,255,255,0.1)'; }, 2000);
+                };
+                block.appendChild(btn);
+            });
+        }
 
-            if (!code.trim()) {
-                alert("Please provide target code for the agent to process!");
+        // History Management
+        function saveToHistory(mode, codePreview, finalAnswer) {
+            let history = JSON.parse(localStorage.getItem('agentHistory') || '[]');
+            history.unshift({
+                mode: mode,
+                time: new Date().toLocaleTimeString(),
+                preview: codePreview.substring(0, 40) + '...',
+                answer: finalAnswer,
+                fullCode: codePreview
+            });
+            if(history.length > 10) history.pop(); // Keep 10 max
+            localStorage.setItem('agentHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('agentHistory');
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            let history = JSON.parse(localStorage.getItem('agentHistory') || '[]');
+            list.innerHTML = '';
+            
+            if(history.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center mt-4 text-sm">No memory yet.</p>';
                 return;
             }
 
-            // Switch UI states
-            document.getElementById('placeholder').classList.add('hidden');
-            document.getElementById('result-content').classList.add('hidden');
-            document.getElementById('result-content').innerHTML = '';
-            
-            const loadingText = document.getElementById('loading-text');
-            if(currentMode === 'debug') loadingText.innerText = 'Debugging Agent is hunting errors...';
-            if(currentMode === 'refactor') loadingText.innerText = 'Refactoring Agent is optimizing your code...';
-            if(currentMode === 'security') loadingText.innerText = 'Security Agent is hunting vulnerabilities...';
-            if(currentMode === 'explain') loadingText.innerText = 'Teaching Agent is analyzing code flow...';
+            history.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'history-item group';
+                
+                const emojis = {debug:'🐛', refactor:'🚀', security:'🛡️', explain:'🧠'};
+                
+                el.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">${emojis[item.mode]} ${item.mode}</span>
+                        <span class="text-[10px] text-gray-500">${item.time}</span>
+                    </div>
+                    <p class="text-sm text-gray-300 font-mono text-xs truncate">${item.preview}</p>
+                `;
+                
+                // When clicked, load into primary viewer
+                el.onclick = () => {
+                    document.getElementById('placeholder').classList.add('hidden');
+                    const resBox = document.getElementById('result-content');
+                    resBox.classList.remove('hidden');
+                    resBox.innerHTML = marked.parse(item.answer);
+                    injectCopyButtons();
+                    document.getElementById('code').value = item.fullCode;
+                    toggleSidebar(); // Close sidebar automatically
+                };
+                list.appendChild(el);
+            });
+        }
 
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('loading').classList.add('flex');
+        // Run SSE Fetch
+        document.getElementById('dispatch-btn').addEventListener('click', async () => {
+            if(isGenerating) return;
+            
+            const code = document.getElementById('code').value;
+            const error = document.getElementById('error').value;
+
+            if (!code.trim()) { alert("Please provide code!"); return; }
+
+            isGenerating = true;
+            document.getElementById('placeholder').classList.add('hidden');
+            const resultBox = document.getElementById('result-content');
+            resultBox.classList.remove('hidden');
+            resultBox.innerHTML = '<span class="animate-pulse text-pink-400">Agent is typing...</span>';
             
             const btn = document.getElementById('dispatch-btn');
-            btn.innerHTML = 'IN PROGRESS...';
-            btn.disabled = true;
-            btn.classList.add('opacity-80', 'cursor-wait');
+            btn.innerHTML = 'ANALYZING...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                const response = await fetch('/analyze', {
+                const response = await fetch('/analyze_stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code, error: error, mode: currentMode })
+                    body: JSON.stringify({ code, error, mode: currentMode })
                 });
 
-                const data = await response.json();
-                
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('loading').classList.remove('flex');
-                
-                const resultBox = document.getElementById('result-content');
-                resultBox.classList.remove('hidden');
+                if (!response.ok) throw new Error("Server error");
 
-                if (response.ok) {
-                    resultBox.innerHTML = marked.parse(data.response);
-                } else {
-                    resultBox.innerHTML = `<div class="bg-red-900/40 border border-red-500/50 p-4 rounded-xl">
-                        <h3 class="text-red-300 font-bold mb-2">Error Encountered</h3>
-                        <p class="text-red-200">${data.error || 'Server error occurred.'}</p>
-                    </div>`;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let overallText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunkStr = decoder.decode(value, { stream: true });
+                    const events = chunkStr.split("\n\n");
+
+                    for (const event of events) {
+                        if (event.startsWith("data: ")) {
+                            const dataPayload = event.replace("data: ", "").trim();
+                            if (dataPayload === "[DONE]") {
+                                isGenerating = false;
+                                break;
+                            }
+                            if(dataPayload) {
+                                try {
+                                    const parsed = JSON.parse(dataPayload);
+                                    overallText += parsed.text;
+                                    // Continually re-parse Markdown so the user sees proper formatting mid-stream!
+                                    resultBox.innerHTML = marked.parse(overallText);
+                                    
+                                    // Auto scroll
+                                    const wrapper = document.getElementById('output-wrapper');
+                                    wrapper.scrollTop = wrapper.scrollHeight;
+                                } catch(e) {}
+                            }
+                        }
+                    }
                 }
-            } catch (err) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('loading').classList.remove('flex');
                 
-                const resultBox = document.getElementById('result-content');
-                resultBox.classList.remove('hidden');
-                resultBox.innerHTML = `<div class="bg-red-900/40 border border-red-500/50 p-4 rounded-xl">
-                    <h3 class="text-red-300 font-bold mb-2">Network Error</h3>
-                    <p class="text-red-200">Could not reach the server. Make sure your Python backend is running!</p>
-                </div>`;
+                // Final touches
+                injectCopyButtons();
+                saveToHistory(currentMode, code, overallText);
+
+            } catch (err) {
+                resultBox.innerHTML = `<p class="text-red-400">Connection error: ${err.message}</p>`;
             } finally {
+                isGenerating = false;
                 btn.innerHTML = `DISPATCH AGENT <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`;
-                btn.disabled = false;
-                btn.classList.remove('opacity-80', 'cursor-wait');
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         });
+
+        // Initialize history on load
+        renderHistory();
     </script>
 </body>
 </html>
