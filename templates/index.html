@@ -257,6 +257,11 @@
         let currentMode = 'debug';
         let isGenerating = false;
         
+        // Voice Cancel instantly when unchecked mid-speech
+        document.getElementById('voice-toggle').addEventListener('change', (e) => {
+            if (!e.target.checked) window.speechSynthesis.cancel();
+        });
+
         // Handle Native Input & Advanced GitHub Links!
         document.getElementById('code').addEventListener('input', async (e) => {
             updateLineNumbers();
@@ -421,22 +426,41 @@
                 };
                 block.appendChild(btn);
 
-                // Download File Button
-                const langMatch = codeNode.className.match(/language-(\w+)/);
-                const lang = langMatch ? langMatch[1] : 'txt';
-                let ext = lang === 'python' ? 'py' : (lang === 'javascript' || lang === 'js' ? 'js' : lang);
-                
+                // Advanced Download & Language Converter Button
                 const dlBtn = document.createElement('button');
                 dlBtn.className = 'dl-btn';
-                dlBtn.innerText = `💾 Save as .${ext}`;
-                dlBtn.onclick = () => {
-                    const blob = new Blob([codeNode.innerText], { type: 'text/plain' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `agent_code.${ext}`;
-                    a.click();
-                    dlBtn.innerText = 'Downloaded!';
-                    setTimeout(() => dlBtn.innerText = `💾 Save as .${ext}`, 2000);
+                dlBtn.innerText = `🔄 Convert & Download`;
+                dlBtn.onclick = async () => {
+                    const targetLang = prompt("Compile and save code as which language? (e.g. python, cpp, java, go)");
+                    if(!targetLang) return; // User cancelled
+                    
+                    dlBtn.innerText = 'Converting...';
+                    dlBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    
+                    try {
+                        const res = await fetch('/convert', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: codeNode.innerText, language: targetLang })
+                        });
+                        const data = await res.json();
+                        
+                        // Map common typed languages to standard file extensions
+                        const extMap = { 'javascript': 'js', 'java script': 'js', 'python': 'py', 'c++': 'cpp', 'cpp': 'cpp', 'java': 'java', 'go': 'go', 'c#': 'cs', 'html':'html', 'css':'css', 'rust':'rs', 'ruby':'rb' };
+                        const finalExt = extMap[targetLang.toLowerCase().trim()] || 'txt';
+                        
+                        const blob = new Blob([data.code || data.error], { type: 'text/plain' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `converted_code.${finalExt}`;
+                        a.click();
+                        
+                        dlBtn.innerText = '✅ Completed!';
+                    } catch(e) {
+                        dlBtn.innerText = '❌ Failed';
+                    }
+                    dlBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    setTimeout(() => dlBtn.innerText = `🔄 Convert & Download`, 3000);
                 };
                 block.appendChild(dlBtn);
 

@@ -31,6 +31,23 @@ def analyze_stream():
 
     return Response(generate(), mimetype='text/event-stream')
 
+@app.route("/convert", methods=["POST"])
+def convert():
+    """ Dedicated endpoint to translate code block languages for the Convert & Download feature """
+    import google.generativeai as genai
+    data = request.json
+    code = data.get("code", "")
+    target_lang = data.get("language", "javascript")
+
+    try:
+        model = genai.GenerativeModel("gemini-1.5-pro") # use standard model for translation
+        prompt = f"You are a master polyglot compiler. Translate the following code precisely into {target_lang}. Return ONLY the raw code, absolutely zero markdown formatting, no backticks, no explanations. Code:\n{code}"
+        response = model.generate_content(prompt)
+        clean_code = response.text.replace("```" + target_lang, "").replace("```", "").strip()
+        return jsonify({"code": clean_code})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=True)
