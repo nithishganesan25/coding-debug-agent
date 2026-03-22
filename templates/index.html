@@ -98,6 +98,14 @@
             cursor: pointer; transition: 0.2s; font-family: 'Outfit'; z-index: 10;
         }
         .copy-btn:hover { background: #db2777; }
+
+        /* Drag and Drop Effects */
+        .drag-over {
+            border: 2px dashed #f472b6 !important;
+            background: rgba(219, 39, 119, 0.2) !important;
+            box-shadow: 0 0 30px rgba(244, 114, 182, 0.5) !important;
+            transform: scale(1.01);
+        }
     </style>
 </head>
 <body class="min-h-screen text-white flex flex-col p-4 md:p-6 lg:p-8">
@@ -152,7 +160,7 @@
             </div>
 
             <div class="flex-grow flex flex-col gap-4 relative z-10 w-full mt-2">
-                <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all" placeholder="# Paste your target code here..."></textarea>
+                <textarea id="code" class="code-input flex-grow w-full rounded-2xl p-5 resize-none transition-all" placeholder="# Paste or Drag & Drop a code file here..."></textarea>
                 <textarea id="error" class="code-input h-20 w-full rounded-2xl p-4 resize-none transition-all text-sm" placeholder="Paste context or errors here (Optional)..."></textarea>
             </div>
 
@@ -196,6 +204,45 @@
             highlight: function(code, lang) {
                 const language = hljs.getLanguage(lang) ? lang : 'plaintext';
                 return hljs.highlight(code, { language }).value;
+            }
+        });
+
+        // Drag and Drop File Analyzer Logic
+        const codeInput = document.getElementById('code');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            codeInput.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            codeInput.addEventListener(eventName, () => {
+                codeInput.classList.add('drag-over');
+                codeInput.placeholder = "Drop your code file here to instantly extract it! 🚀";
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            codeInput.addEventListener(eventName, () => {
+                codeInput.classList.remove('drag-over');
+                codeInput.placeholder = "# Paste or Drag & Drop a code file here...";
+            });
+        });
+
+        codeInput.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    codeInput.value = event.target.result;
+                    // Flash green to indicate success
+                    codeInput.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.5)';
+                    codeInput.style.borderColor = '#10b981';
+                    setTimeout(() => {
+                        codeInput.style.boxShadow = '';
+                        codeInput.style.borderColor = '';
+                    }, 1000);
+                };
+                reader.readAsText(file);
             }
         });
 
