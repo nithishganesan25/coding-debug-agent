@@ -110,7 +110,15 @@
             transform: scale(1.01);
         }
 
-        /* WebAssembly Terminal */
+        /* Action Buttons Over CodeBlocks */
+        .dl-btn {
+            position: absolute; top: 8px; right: 175px; 
+            background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5);
+            padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; transition: 0.3s; font-family: 'Outfit'; z-index: 10;
+        }
+        .dl-btn:hover { background: #0ea5e9; color: white; box-shadow: 0 0 10px #0ea5e9; transform: scale(1.05); }
+
         .run-btn {
             position: absolute; top: 8px; right: 70px;
             background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.5);
@@ -199,7 +207,11 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end z-10">
+            <div class="mt-6 flex justify-between items-center z-10 w-full">
+                <label class="flex items-center gap-3 cursor-pointer text-sm font-bold text-gray-400 hover:text-white transition bg-black/30 p-3 rounded-xl border border-white/5 shadow-inner">
+                    <input type="checkbox" id="voice-toggle" class="form-checkbox h-5 w-5 text-pink-500 rounded bg-black/50 border-white/20 accent-pink-500 cursor-pointer">
+                    <span>🎙️ Agent Voice</span>
+                </label>
                 <button id="dispatch-btn" class="glow-btn text-white font-black tracking-widest py-4 px-10 rounded-2xl flex items-center gap-3 text-lg">
                     DISPATCH AGENT
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -245,6 +257,25 @@
         let currentMode = 'debug';
         let isGenerating = false;
         
+        // Handle Native Input & Advanced GitHub Links!
+        document.getElementById('code').addEventListener('input', async (e) => {
+            updateLineNumbers();
+            const text = e.target.value.trim();
+            if (text.startsWith('https://github.com/') && text.includes('/blob/')) {
+                const rawUrl = text.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+                e.target.value = "🐙 Downloading code gracefully from GitHub...";
+                try {
+                    const res = await fetch(rawUrl);
+                    if(res.ok) {
+                        e.target.value = await res.text();
+                        updateLineNumbers();
+                        e.target.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
+                        setTimeout(() => e.target.style.boxShadow = '', 1000);
+                    } else e.target.value = "Error: Could not fetch GitHub file (Must be public).";
+                } catch(err) { e.target.value = "Error reaching GitHub servers."; }
+            }
+        });
+
         // Dynamic Line Number Generation
         function updateLineNumbers() {
             const textarea = document.getElementById('code');
@@ -390,6 +421,25 @@
                 };
                 block.appendChild(btn);
 
+                // Download File Button
+                const langMatch = codeNode.className.match(/language-(\w+)/);
+                const lang = langMatch ? langMatch[1] : 'txt';
+                let ext = lang === 'python' ? 'py' : (lang === 'javascript' || lang === 'js' ? 'js' : lang);
+                
+                const dlBtn = document.createElement('button');
+                dlBtn.className = 'dl-btn';
+                dlBtn.innerText = `💾 Save as .${ext}`;
+                dlBtn.onclick = () => {
+                    const blob = new Blob([codeNode.innerText], { type: 'text/plain' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `agent_code.${ext}`;
+                    a.click();
+                    dlBtn.innerText = 'Downloaded!';
+                    setTimeout(() => dlBtn.innerText = `💾 Save as .${ext}`, 2000);
+                };
+                block.appendChild(dlBtn);
+
                 // Run Button (Only inject onto Python blocks)
                 const isPython = codeNode.className.includes('python') || codeNode.className.includes('py') || !codeNode.className;
                 if (isPython) {
@@ -504,6 +554,18 @@
                             const dataPayload = event.replace("data: ", "").trim();
                             if (dataPayload === "[DONE]") {
                                 isGenerating = false;
+                                
+                                // Trigger Agent Voice Synthesis when Complete!
+                                if(document.getElementById('voice-toggle').checked) {
+                                    window.speechSynthesis.cancel();
+                                    // Strip markdown characters and code blocks to make the robotic voice sound fluent
+                                    let cleanText = overallText.replace(/```[\s\S]*?```/g, " [See code block] ").replace(/[*#>`_-]/g, "");
+                                    let utterance = new SpeechSynthesisUtterance(cleanText);
+                                    let voices = window.speechSynthesis.getVoices();
+                                    utterance.voice = voices.find(v => v.name.includes('Google') || v.name.includes('Female')) || voices[0];
+                                    utterance.rate = 1.05;
+                                    window.speechSynthesis.speak(utterance);
+                                }
                                 break;
                             }
                             if(dataPayload) {
