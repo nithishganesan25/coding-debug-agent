@@ -40,7 +40,7 @@ def convert():
     target_lang = data.get("language", "javascript")
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-pro") # use standard model for translation
+        model = genai.GenerativeModel("gemini-2.5-flash") # use standard model for translation
         prompt = f"You are a master polyglot compiler. Translate the following code precisely into {target_lang}. Return ONLY the raw code, absolutely zero markdown formatting, no backticks, no explanations. Code:\n{code}"
         response = model.generate_content(prompt)
         clean_code = response.text.replace("```" + target_lang, "").replace("```", "").strip()
