@@ -1,0 +1,10 @@
+import requests
+
+url = "http://127.0.0.1:8080/debug"
+data = {
+    "code": "def my_func():\n  print('hello' + 5)",
+    "error": "TypeError: can only concatenate str (not 'int') to str"
+}
+
+response = requests.post(url, json=data)
+print(response.json())
