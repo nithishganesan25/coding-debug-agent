@@ -11,6 +11,8 @@
     <!-- Highlight.js for Syntax Highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Pyodide WebAssembly Python Engine -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -106,9 +108,45 @@
             box-shadow: 0 0 30px rgba(244, 114, 182, 0.5) !important;
             transform: scale(1.01);
         }
+
+        /* WebAssembly Terminal */
+        .run-btn {
+            position: absolute; top: 8px; right: 70px;
+            background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.5);
+            padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; transition: 0.3s; font-family: 'Outfit'; z-index: 10;
+        }
+        .run-btn:hover { background: #10b981; color: white; box-shadow: 0 0 10px #10b981; transform: scale(1.05); }
+        
+        #wasm-terminal {
+            position: fixed; bottom: 20px; right: 20px; width: 450px; height: 350px;
+            background: rgba(0, 0, 0, 0.95); border: 1px solid #c084fc;
+            box-shadow: 0 10px 50px rgba(192, 132, 252, 0.4); border-radius: 12px;
+            display: flex; flex-direction: column; overflow: hidden; z-index: 999;
+            transform: translateY(150%); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #wasm-terminal.show { transform: translateY(0); }
+        .term-header { 
+            background: #1e0b36; padding: 12px 15px; display: flex; justify-content: space-between; 
+            align-items: center; font-weight: 800; font-size: 0.9rem; color: #fbcfe8; 
+            border-bottom: 2px solid #db2777; 
+        }
+        #term-output { 
+            padding: 15px; color: #a78bfa; font-family: 'JetBrains Mono', monospace; 
+            font-size: 0.85rem; overflow-y: auto; flex-grow: 1; white-space: pre-wrap; line-height: 1.6; 
+        }
     </style>
 </head>
 <body class="min-h-screen text-white flex flex-col p-4 md:p-6 lg:p-8">
+
+    <!-- Floating WebAssembly Terminal -->
+    <div id="wasm-terminal">
+        <div class="term-header">
+            <span class="flex items-center gap-2"><span class="text-xl">💻</span> Live Python Executer</span>
+            <button onclick="document.getElementById('wasm-terminal').classList.remove('show')" class="text-white hover:text-red-400 font-bold transition">&times; CLOSE</button>
+        </div>
+        <div id="term-output">Initializing WebAssembly Engine...</div>
+    </div>
 
     <!-- History Sidebar -->
     <div id="sidebar" class="sidebar shadow-2xl">
@@ -262,21 +300,64 @@
             });
         });
 
+        // Pyodide Terminal Logic
+        let pyodideReadyPromise;
+        async function initPyodide() {
+            pyodideReadyPromise = loadPyodide({
+                stdout: (text) => appendTerm(text + "\n"),
+                stderr: (text) => appendTerm(`<span style="color:#ef4444;">${text}</span>\n`)
+            });
+        }
+        initPyodide(); // Start loading engine quietly in the background!
+
+        function appendTerm(html) {
+            const out = document.getElementById('term-output');
+            out.innerHTML += html;
+            out.scrollTop = out.scrollHeight; // Auto-scroll to bottom
+        }
+
+        async function runPythonInBrowser(code) {
+            const term = document.getElementById('wasm-terminal');
+            const out = document.getElementById('term-output');
+            term.classList.add('show'); // Slide the terminal up into view!
+            out.innerHTML = `<span style="color:#fbcfe8; font-weight:bold;">>>> Booting Secure Execution Container...</span>\n`;
+            
+            try {
+                let pyodide = await pyodideReadyPromise;
+                out.innerHTML += `<span style="color:#34d399; font-weight:bold;">>>> Engine Ready. Output:</span>\n\n`;
+                await pyodide.runPythonAsync(code);
+            } catch (err) {
+                appendTerm(`<span style="color:#ef4444; font-weight:bold;">${err}</span>\n`);
+            }
+            appendTerm(`\n<span style="color:#9333ea; font-weight:bold;">>>> Execution Completed.</span>\n`);
+        }
+
         // Add Copy Builders to Code Blocks
         function injectCopyButtons() {
             document.querySelectorAll('pre').forEach((block) => {
-                if(block.querySelector('.copy-btn')) return; // already injected
+                const codeNode = block.querySelector('code');
+                if(!codeNode || block.querySelector('.copy-btn')) return; // already injected
+                
                 const btn = document.createElement('button');
                 btn.className = 'copy-btn';
                 btn.innerText = 'Copy';
                 btn.onclick = () => {
-                    const codeText = block.querySelector('code').innerText;
-                    navigator.clipboard.writeText(codeText);
+                    navigator.clipboard.writeText(codeNode.innerText);
                     btn.innerText = 'Copied!';
                     btn.style.background = '#10b981';
                     setTimeout(() => { btn.innerText = 'Copy'; btn.style.background = 'rgba(255,255,255,0.1)'; }, 2000);
                 };
                 block.appendChild(btn);
+
+                // Run Button (Only inject onto Python blocks)
+                const isPython = codeNode.className.includes('python') || codeNode.className.includes('py') || !codeNode.className;
+                if (isPython) {
+                    const runBtn = document.createElement('button');
+                    runBtn.className = 'run-btn';
+                    runBtn.innerText = '▶️ Run Code';
+                    runBtn.onclick = () => runPythonInBrowser(codeNode.innerText);
+                    block.appendChild(runBtn);
+                }
             });
         }
 
